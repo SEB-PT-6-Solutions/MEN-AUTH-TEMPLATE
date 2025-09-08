@@ -1,11 +1,16 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
+
 const User = require('../models/user');
 
 const router = express.Router();
 
 router.get('/sign-up', (req, res) => {
   res.render('auth/sign-up.ejs');
+});
+
+router.get('/sign-in', (req, res) => {
+  res.render('auth/sign-in.ejs');
 });
 
 router.post('/sign-up', async (req, res) => {
@@ -24,6 +29,27 @@ router.post('/sign-up', async (req, res) => {
 
   const newUser = await User.create(req.body);
   res.send(newUser);
+});
+
+router.post('/sign-in', async (req, res) => {
+  const userInDatabase = await User.findOne({ username: req.body.username });
+
+  if (!userInDatabase) {
+    return res.send('Username or Password is invalid');
+  }
+
+  const validPassword = bcrypt.compareSync(req.body.password, userInDatabase.password);
+
+  if (!validPassword) {
+    return res.send('Username or Password is invalid');
+  }
+
+  req.session.user = {
+    username: userInDatabase.username,
+    _id: userInDatabase._id,
+  };
+
+  res.redirect('/');
 });
 
 module.exports = router;
